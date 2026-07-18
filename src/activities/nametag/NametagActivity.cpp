@@ -46,20 +46,22 @@ void NametagActivity::onEnter() {
   renderer.setOrientation(GfxRenderer::LandscapeCounterClockwise);
   renderer.clearScreen();
 
-  bool bmpLoaded = false;
   HalFile bmpFile;
   if (Storage.openFileForRead("NTG", NAMETAG_BMP_PATH, bmpFile)) {
     Bitmap bitmap(bmpFile, /*dithering=*/true);
     if (bitmap.parseHeaders() == BmpReaderError::Ok) {
       renderer.drawBitmap(bitmap, 0, 0, PANEL_W, BMP_H);
-      bmpLoaded = true;
     } else {
       LOG_DBG("NTG", "Failed to parse %s headers", NAMETAG_BMP_PATH);
     }
   }
 
-  const int textRegionY = bmpLoaded ? BMP_H : 0;
-  const int textRegionH = bmpLoaded ? (PANEL_H - BMP_H) : PANEL_H;
+  // The text always occupies the bottom two-thirds of the panel regardless of
+  // whether the BMP loaded. Keeps the layout predictable and stops the size-fit
+  // algorithm from opportunistically choosing a font that only fits when the
+  // whole panel is available.
+  constexpr int textRegionY = BMP_H;
+  constexpr int textRegionH = PANEL_H - BMP_H;
 
   // GfxRenderer::drawText treats `y` as the top of the line (it adds the font's
   // ascender internally to get the baseline). All positions below are top-of-line.
