@@ -3,6 +3,7 @@
 #include <Bitmap.h>
 #include <GfxRenderer.h>
 #include <HalStorage.h>
+#include <I18n.h>
 #include <Logging.h>
 #include <NametagSizeFit.h>
 #include <NametagText.h>
@@ -59,6 +60,10 @@ void NametagActivity::onEnter() {
 
   const int textRegionY = bmpLoaded ? BMP_H : 0;
   const int textRegionH = bmpLoaded ? (PANEL_H - BMP_H) : PANEL_H;
+
+  // Small header sitting flush with the top-left of the text region.
+  renderer.drawText(UI_10_FONT_ID, 12, textRegionY + renderer.getFontAscenderSize(UI_10_FONT_ID) + 6,
+                    tr(STR_NAMETAG_HEADER), true);
 
   const auto labels = nametag::parseTexts(std::string_view(SETTINGS.nametagTexts));
   if (!labels.empty()) {
