@@ -129,6 +129,16 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
         SettingInfo::Toggle(StrId::STR_SUNLIGHT_FADING_FIX, &CrossPointSettings::fadingFix, "fadingFix",
                             StrId::STR_CAT_DISPLAY),
 
+        // --- Nametag ---
+        SettingInfo::Toggle(StrId::STR_NAMETAG_ENABLED, &CrossPointSettings::nametagEnabled, "nametagEnabled",
+                            StrId::STR_CAT_NAMETAG),
+        SettingInfo::Value(StrId::STR_NAMETAG_CYCLE_MINUTES, &CrossPointSettings::nametagCycleMinutes,
+                           {CrossPointSettings::MIN_NAMETAG_CYCLE_MINUTES, CrossPointSettings::MAX_NAMETAG_CYCLE_MINUTES,
+                            1},
+                           "nametagCycleMinutes", StrId::STR_CAT_NAMETAG),
+        SettingInfo::MultilineString(StrId::STR_NAMETAG_TEXTS, SETTINGS.nametagTexts,
+                                     sizeof(CrossPointSettings::nametagTexts), "nametagTexts", StrId::STR_CAT_NAMETAG),
+
         // --- Reader ---
         // Built-in font-family entry. Replaced per-call with a registry-aware
         // version when SD fonts are installed.
