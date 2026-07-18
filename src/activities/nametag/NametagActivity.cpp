@@ -61,9 +61,11 @@ void NametagActivity::onEnter() {
   const int textRegionY = bmpLoaded ? BMP_H : 0;
   const int textRegionH = bmpLoaded ? (PANEL_H - BMP_H) : PANEL_H;
 
-  // Small header sitting flush with the top-left of the text region.
-  renderer.drawText(UI_10_FONT_ID, 12, textRegionY + renderer.getFontAscenderSize(UI_10_FONT_ID) + 6,
-                    tr(STR_NAMETAG_HEADER), true);
+  // GfxRenderer::drawText treats `y` as the top of the line (it adds the font's
+  // ascender internally to get the baseline). All positions below are top-of-line.
+
+  // Small header sitting near the top-left of the text region.
+  renderer.drawText(UI_10_FONT_ID, 12, textRegionY + 6, tr(STR_NAMETAG_HEADER), true);
 
   const auto labels = nametag::parseTexts(std::string_view(SETTINGS.nametagTexts));
   if (!labels.empty()) {
@@ -88,14 +90,11 @@ void NametagActivity::onEnter() {
     const std::string labelStr(label);
     const auto lines = renderer.wrappedText(fit.fontId, labelStr.c_str(), PANEL_W, fit.lineCount);
 
-    // Optical vertical centring: place the midpoint of the baseline stack on the
-    // region centre, then shift down by half an ascender so the visible glyph mass
-    // (which sits above the baseline) is what feels centred rather than the
-    // ascender+descender bounding box.
-    const int ascender = renderer.getFontAscenderSize(fit.fontId);
-    const int regionCenter = textRegionY + textRegionH / 2;
+    // Centre the top-of-line block in the region. drawText handles the baseline
+    // shift, so we just pick top-of-first-line so N lines fit centrally.
     const int lineCount = static_cast<int>(lines.size());
-    int y = regionCenter + ascender / 2 - (lineCount - 1) * fit.lineHeight / 2;
+    const int blockH = lineCount * fit.lineHeight;
+    int y = textRegionY + (textRegionH - blockH) / 2;
     for (const auto& line : lines) {
       renderer.drawCenteredText(fit.fontId, y, line.c_str(), true);
       y += fit.lineHeight;
