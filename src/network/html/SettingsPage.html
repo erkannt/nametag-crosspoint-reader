@@ -140,6 +140,31 @@
       color: var(--muted-color, #7f8c8d);
       padding: 4px 0 8px 0;
     }
+    .nametag-preview-list {
+      list-style: none;
+      padding: 0;
+      margin: 4px 0 0 0;
+    }
+    .nametag-preview-list li {
+      display: flex;
+      gap: 8px;
+      padding: 2px 0;
+      align-items: baseline;
+    }
+    .nametag-preview-list li.overflow { color: #c0392b; }
+    .nametag-preview-icon { flex-shrink: 0; width: 1em; text-align: center; }
+    .nametag-preview-text {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .nametag-preview-meta {
+      flex-shrink: 0;
+      color: var(--label-color);
+      font-size: 0.9em;
+    }
     /* Toggle switch */
     .toggle-switch {
       display: inline-block;
@@ -528,7 +553,58 @@
     if (key === 'shortPwrBtn') {
       updateSettingsVisibility();
     }
+    if (key === 'nametagTexts') {
+      scheduleNametagPreview();
+    }
     markChanged();
+  }
+
+  let nametagPreviewTimer = null;
+
+  function scheduleNametagPreview() {
+    if (nametagPreviewTimer) clearTimeout(nametagPreviewTimer);
+    // Debounce so we don't slam the device with a request per keystroke.
+    nametagPreviewTimer = setTimeout(runNametagPreview, 400);
+  }
+
+  async function runNametagPreview() {
+    const el = document.getElementById('setting-nametagTexts');
+    const hint = document.getElementById('nametag-preview-hint');
+    if (!el || !hint) return;
+    try {
+      const resp = await fetch('/api/nametag/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: el.value || '' })
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      hint.innerHTML = renderNametagPreview(data);
+    } catch (e) {
+      hint.textContent = 'Preview unavailable';
+    }
+  }
+
+  function renderNametagPreview(data) {
+    if (!data || !Array.isArray(data.labels)) return '';
+    if (data.labels.length === 0) {
+      return 'No labels yet — one label per line, up to ' + data.maxLines + ' wrapped lines each at 48pt.';
+    }
+    let html = 'Wrap preview at 48pt (max ' + data.maxLines + ' lines per label):<ul class="nametag-preview-list">';
+    data.labels.forEach(function(l) {
+      const cls = l.fits ? 'fits' : 'overflow';
+      const icon = l.fits ? '✓' : '✗';
+      const meta = l.fits
+        ? (l.lines + ' line' + (l.lines === 1 ? '' : 's'))
+        : (l.lines + '+ lines — will truncate to ' + data.maxLines);
+      html += '<li class="' + cls + '">' +
+        '<span class="nametag-preview-icon">' + icon + '</span>' +
+        '<span class="nametag-preview-text">' + escapeHtml(l.text) + '</span>' +
+        '<span class="nametag-preview-meta">' + escapeHtml(meta) + '</span>' +
+      '</li>';
+    });
+    html += '</ul>';
+    return html;
   }
 
   async function loadSettings() {
@@ -566,6 +642,9 @@
           if (s.key === 'nametagEnabled') {
             html += '<div class="setting-hint">Nametag mode keeps the MCU lightly powered during sleep so cycling works on battery too. Idle drain is small (~µA range); short cycle intervals will still shorten battery life meaningfully.</div>';
           }
+          if (s.key === 'nametagTexts') {
+            html += '<div class="setting-hint" id="nametag-preview-hint">Preview loading…</div>';
+          }
         });
         html += '</div>';
       }
@@ -578,6 +657,9 @@
       quickResumeTimeoutAutoEnabled = false;
       if (syncQuickResumeTimeoutForSleepScreen(true, false)) {
         markChanged();
+      }
+      if (document.getElementById('setting-nametagTexts')) {
+        runNametagPreview();
       }
     } catch (e) {
       console.error(e);
