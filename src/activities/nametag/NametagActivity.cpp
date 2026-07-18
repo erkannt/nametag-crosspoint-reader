@@ -48,7 +48,7 @@ void NametagActivity::onEnter() {
   bool bmpLoaded = false;
   HalFile bmpFile;
   if (Storage.openFileForRead("NTG", NAMETAG_BMP_PATH, bmpFile)) {
-    Bitmap bitmap(bmpFile);
+    Bitmap bitmap(bmpFile, /*dithering=*/true);
     if (bitmap.parseHeaders() == BmpReaderError::Ok) {
       renderer.drawBitmap(bitmap, 0, 0, PANEL_W, BMP_H);
       bmpLoaded = true;
