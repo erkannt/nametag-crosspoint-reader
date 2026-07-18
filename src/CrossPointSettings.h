@@ -268,6 +268,11 @@ class CrossPointSettings {
   uint8_t language = 0;
   // Quick Resume: keep current content visible with moon icon instead of showing a static sleep screen.
   uint8_t quickResumeSleepScreen = QUICK_RESUME_NEVER;
+  // Nametag mode: replace the sleep screen with a kiosk-style label that cycles on a timer.
+  // Timer wake only fires when USB-powered; on battery the device fully powers off during deep sleep.
+  uint8_t nametagEnabled = 0;
+  uint8_t nametagCycleMinutes = 5;
+  char nametagTexts[512] = "";
 
   ~CrossPointSettings() = default;
 
@@ -277,6 +282,9 @@ class CrossPointSettings {
   static constexpr uint8_t MIN_SLEEP_TIMEOUT_MINUTES = 1;
   static constexpr uint8_t SLEEP_TIMEOUT_NEVER_MINUTES = 31;
   static constexpr uint8_t MAX_SLEEP_TIMEOUT_MINUTES = SLEEP_TIMEOUT_NEVER_MINUTES;
+
+  static constexpr uint8_t MIN_NAMETAG_CYCLE_MINUTES = 1;
+  static constexpr uint8_t MAX_NAMETAG_CYCLE_MINUTES = 60;
 
   // Callback to resolve SD card font IDs. Set by SdCardFontSystem::begin().
   // Returns font ID or 0 if not found.
