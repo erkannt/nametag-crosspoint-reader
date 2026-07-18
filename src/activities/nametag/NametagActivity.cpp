@@ -5,6 +5,7 @@
 #include <HalStorage.h>
 #include <I18n.h>
 #include <Logging.h>
+#include <NametagLayout.h>
 #include <NametagText.h>
 
 #include <string>
@@ -17,9 +18,6 @@
 namespace {
 
 constexpr char NAMETAG_BMP_PATH[] = "/nametag.bmp";
-constexpr int PANEL_W = 800;
-constexpr int PANEL_H = 480;
-constexpr int BMP_H = 160;
 
 }  // namespace
 
@@ -34,33 +32,23 @@ void NametagActivity::onEnter() {
   if (Storage.openFileForRead("NTG", NAMETAG_BMP_PATH, bmpFile)) {
     Bitmap bitmap(bmpFile, /*dithering=*/true);
     if (bitmap.parseHeaders() == BmpReaderError::Ok) {
-      renderer.drawBitmap(bitmap, 0, 0, PANEL_W, BMP_H);
+      renderer.drawBitmap(bitmap, 0, 0, nametag::PANEL_W, nametag::BMP_H);
     } else {
       LOG_DBG("NTG", "Failed to parse %s headers", NAMETAG_BMP_PATH);
     }
   }
 
-  // The text always occupies the bottom two-thirds of the panel regardless of
-  // whether the BMP loaded. Keeps the layout predictable and stops the size-fit
-  // algorithm from opportunistically choosing a font that only fits when the
-  // whole panel is available.
-  constexpr int textRegionY = BMP_H;
-  constexpr int textRegionH = PANEL_H - BMP_H;
-
   // GfxRenderer::drawText treats `y` as the top of the line (it adds the font's
   // ascender internally to get the baseline). All positions below are top-of-line.
-
-  // Header near the top-left of the text region — bold 18pt, roughly triple the
-  // previous 10pt UI size. Reserves a strip at the top so the size-fit label
-  // below doesn't collide with it.
-  constexpr int HEADER_PAD_TOP = 8;
-  constexpr int HEADER_PAD_BOTTOM = 8;
-  constexpr int HEADER_LEFT = 12;
-  renderer.drawText(NOTOSANS_18_FONT_ID, HEADER_LEFT, textRegionY + HEADER_PAD_TOP, tr(STR_NAMETAG_HEADER), true,
+  // The label region always occupies the bottom two-thirds of the panel regardless
+  // of whether the BMP loaded — predictable geometry, and shared with the web-UI
+  // preview via NametagLayout.
+  const int headerLineH = renderer.getLineHeight(NOTOSANS_18_FONT_ID);
+  renderer.drawText(NOTOSANS_18_FONT_ID, nametag::HEADER_LEFT,
+                    nametag::TEXT_REGION_Y + nametag::HEADER_PAD_TOP, tr(STR_NAMETAG_HEADER), true,
                     EpdFontFamily::BOLD);
-  const int headerStripH = HEADER_PAD_TOP + renderer.getLineHeight(NOTOSANS_18_FONT_ID) + HEADER_PAD_BOTTOM;
-  const int labelRegionY = textRegionY + headerStripH;
-  const int labelRegionH = textRegionH - headerStripH;
+  const int labelRegionY = nametag::TEXT_REGION_Y + nametag::headerStripH(headerLineH);
+  const int labelRegionH = nametag::labelRegionH(headerLineH);
 
   const auto labels = nametag::parseTexts(std::string_view(SETTINGS.nametagTexts));
   if (!labels.empty()) {
@@ -69,9 +57,9 @@ void NametagActivity::onEnter() {
     // user before they save so this is a rare fallback.
     constexpr int fontId = NAMETAG_LARGE_FONT_ID;
     const int lineHeight = renderer.getLineHeight(fontId);
-    const int maxLines = lineHeight > 0 ? labelRegionH / lineHeight : 1;
+    const int maxLines = nametag::maxLabelLines(headerLineH, lineHeight);
     const std::string labelStr(labels[textIndex % labels.size()]);
-    const auto lines = renderer.wrappedText(fontId, labelStr.c_str(), PANEL_W, maxLines);
+    const auto lines = renderer.wrappedText(fontId, labelStr.c_str(), nametag::PANEL_W, maxLines);
 
     // Centre the top-of-line block in the label sub-region.
     const int lineCount = static_cast<int>(lines.size());
