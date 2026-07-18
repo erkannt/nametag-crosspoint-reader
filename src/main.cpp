@@ -325,6 +325,19 @@ void setupDisplayAndFonts(bool seamless = false) {
   LOG_DBG("MAIN", "Fonts setup");
 }
 
+// Renders the next nametag frame and re-arms the timer wake. Shared by the
+// TimerWakeup path and the power-button manual-cycle path — both start with
+// the panel already showing the previous nametag frame, so seamless
+// begin() + isCycleContinuation=true lets NametagActivity use FAST_REFRESH.
+// Never returns: startDeepSleep() does not return.
+static void renderNametagCycleAndSleep() {
+  setupDisplayAndFonts(true);
+  advanceNametagIndex();
+  activityManager.goToSleep(true, /*isNametagCycleContinuation=*/true);
+  display.deepSleep();
+  powerManager.startDeepSleep(gpio, static_cast<uint32_t>(SETTINGS.nametagCycleSeconds));
+}
+
 void setup() {
   t1 = millis();
 
@@ -379,6 +392,20 @@ void setup() {
   const auto wakeupReason = gpio.getWakeupReason();
   switch (wakeupReason) {
     case HalGPIO::WakeupReason::PowerButton:
+      if (SETTINGS.nametagEnabled) {
+        // In nametag mode the power button is repurposed: a short press cycles
+        // to the next label (and resets the cycle timer); a long press exits
+        // nametag mode by falling through to the normal boot path.
+        constexpr uint16_t NAMETAG_EXIT_HOLD_MS = 800;
+        const unsigned long heldMs = gpio.measurePowerButtonPress(NAMETAG_EXIT_HOLD_MS);
+        if (heldMs < NAMETAG_EXIT_HOLD_MS) {
+          LOG_DBG("MAIN", "Wakeup reason: Power button (nametag manual cycle, %lums)", heldMs);
+          renderNametagCycleAndSleep();
+          return;
+        }
+        LOG_DBG("MAIN", "Wakeup reason: Power button (nametag long-press exit, %lums)", heldMs);
+        break;  // Fall through to normal boot to exit nametag mode.
+      }
       LOG_DBG("MAIN", "Verifying power button press duration");
       gpio.verifyPowerButtonWakeup(SETTINGS.getPowerButtonDuration(),
                                    SETTINGS.shortPwrBtn == CrossPointSettings::SHORT_PWRBTN::SLEEP);
@@ -394,16 +421,7 @@ void setup() {
         // Setting was flipped off between cycles — no reason to be awake.
         powerManager.startDeepSleep(gpio);
       }
-      setupDisplayAndFonts(true);
-      advanceNametagIndex();
-      // goToSleep() swaps in NametagActivity when SETTINGS.nametagEnabled is on
-      // and renders it immediately. Avoid enterDeepSleep() so we don't rewrite
-      // APP_STATE (SPIFFS wear) on every timer cycle. The second arg tells
-      // NametagActivity the panel already shows the previous nametag frame, so
-      // FAST_REFRESH is a valid differential paint.
-      activityManager.goToSleep(true, /*isNametagCycleContinuation=*/true);
-      display.deepSleep();
-      powerManager.startDeepSleep(gpio, static_cast<uint32_t>(SETTINGS.nametagCycleSeconds));
+      renderNametagCycleAndSleep();
       return;
     case HalGPIO::WakeupReason::AfterFlash:
       // After flashing, just proceed to boot

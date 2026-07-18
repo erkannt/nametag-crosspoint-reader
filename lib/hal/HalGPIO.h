@@ -80,6 +80,13 @@ class HalGPIO {
   // Should only be called when wakeup reason is PowerButton.
   void verifyPowerButtonWakeup(uint16_t requiredDurationMs, bool shortPressAllowed);
 
+  // Blocks until the power button is released or maxWaitMs elapses, then
+  // returns the total hold time in ms (measured from boot, so it includes
+  // any time already elapsed during setup). Returns 0 if the button was
+  // never observed as pressed within ~1s (already released / spurious).
+  // Should only be called on PowerButton wakeup.
+  unsigned long measurePowerButtonPress(uint16_t maxWaitMs);
+
   // Check if USB is connected
   bool isUsbConnected() const;
 

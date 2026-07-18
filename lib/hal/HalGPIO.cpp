@@ -269,6 +269,23 @@ void HalGPIO::verifyPowerButtonWakeup(uint16_t requiredDurationMs, bool shortPre
   }
 }
 
+unsigned long HalGPIO::measurePowerButtonPress(uint16_t maxWaitMs) {
+  const auto start = millis();
+  inputMgr.update();
+  // isPressed() needs up to ~500ms to settle after boot per the HalGPIO contract.
+  while (!inputMgr.isPressed(BTN_POWER) && millis() - start < 1000) {
+    delay(10);
+    inputMgr.update();
+  }
+  if (!inputMgr.isPressed(BTN_POWER)) return 0;
+  const auto waitStart = millis();
+  while (inputMgr.isPressed(BTN_POWER) && millis() - waitStart < maxWaitMs) {
+    delay(10);
+    inputMgr.update();
+  }
+  return inputMgr.getPowerButtonHeldTime();
+}
+
 bool HalGPIO::isUsbConnected() const {
   if (deviceIsX3()) {
     // X3: infer USB/charging via BQ27220 Current() register (0x0C, signed mA).
