@@ -53,6 +53,12 @@ python fontconvert.py notosans_8_regular 8 \
   ../builtinFonts/source/NotoSansHebrew/NotoSansHebrew-Regular.ttf \
   --additional-intervals 0x05D0,0x05EA > ../builtinFonts/notosans_8_regular.h
 
+# Nametag mode: a single large-format font for the kiosk sleep screen. Bold + 2bit,
+# generated only in bold since nametag never renders in italic/regular.
+python fontconvert.py notosans_48_bold 48 \
+  ../builtinFonts/source/NotoSans/NotoSans-Bold.ttf \
+  --2bit --compress --pnum > ../builtinFonts/notosans_48_bold.h
+
 echo ""
 echo "Running compression verification..."
 python verify_compression.py ../builtinFonts/
