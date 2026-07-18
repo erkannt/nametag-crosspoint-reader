@@ -83,9 +83,14 @@ void NametagActivity::onEnter() {
     const std::string labelStr(label);
     const auto lines = renderer.wrappedText(fit.fontId, labelStr.c_str(), PANEL_W, fit.lineCount);
 
-    const int totalH = static_cast<int>(lines.size()) * fit.lineHeight;
-    const int baselineY = textRegionY + (textRegionH - totalH) / 2 + renderer.getFontAscenderSize(fit.fontId);
-    int y = baselineY;
+    // Optical vertical centring: place the midpoint of the baseline stack on the
+    // region centre, then shift down by half an ascender so the visible glyph mass
+    // (which sits above the baseline) is what feels centred rather than the
+    // ascender+descender bounding box.
+    const int ascender = renderer.getFontAscenderSize(fit.fontId);
+    const int regionCenter = textRegionY + textRegionH / 2;
+    const int lineCount = static_cast<int>(lines.size());
+    int y = regionCenter + ascender / 2 - (lineCount - 1) * fit.lineHeight / 2;
     for (const auto& line : lines) {
       renderer.drawCenteredText(fit.fontId, y, line.c_str(), true);
       y += fit.lineHeight;
