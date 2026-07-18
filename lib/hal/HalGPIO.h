@@ -86,7 +86,7 @@ class HalGPIO {
   // Returns true once per edge (plug or unplug) since the last update()
   bool wasUsbStateChanged() const;
 
-  enum class WakeupReason { PowerButton, AfterFlash, AfterUSBPower, Other };
+  enum class WakeupReason { PowerButton, AfterFlash, AfterUSBPower, TimerWakeup, Other };
 
   WakeupReason getWakeupReason() const;
 
