@@ -12,6 +12,7 @@
 #include <HalTiltSensor.h>
 #include <I18n.h>
 #include <Logging.h>
+#include <NametagText.h>
 #include <SPI.h>
 #include <WiFi.h>
 #include <builtinFonts/all.h>
@@ -120,6 +121,21 @@ RTC_NOINIT_ATTR uint32_t silentRebootTarget;
 constexpr uint32_t SILENT_REBOOT_MAGIC = 0xC1EAB007;
 constexpr uint32_t SILENT_REBOOT_TARGET_HOME = 0;
 constexpr uint32_t SILENT_REBOOT_TARGET_READER = 1;
+
+// Nametag mode: current text index across timer-wake cycles. Only meaningful
+// when the magic word matches — a cold boot (battery-latch power-off) leaves
+// these registers uninitialised and we fall back to index 0.
+RTC_NOINIT_ATTR uint32_t nametagIndexMagic;
+RTC_NOINIT_ATTR uint32_t nametagTextIndex;
+constexpr uint32_t NAMETAG_INDEX_MAGIC = 0x4E414D45;  // 'NAME'
+
+uint32_t getNametagIndex() { return (nametagIndexMagic == NAMETAG_INDEX_MAGIC) ? nametagTextIndex : 0; }
+
+void advanceNametagIndex(uint32_t labelCount) {
+  const uint32_t next = (labelCount == 0) ? 0 : (getNametagIndex() + 1) % labelCount;
+  nametagTextIndex = next;
+  nametagIndexMagic = NAMETAG_INDEX_MAGIC;
+}
 
 // How the device is coming back to life, resolved once at boot. Both resume
 // flows suppress the splash and leave the panel holding its pre-boot frame; a
@@ -269,7 +285,9 @@ void enterDeepSleep(bool fromTimeout = false) {
   display.deepSleep();
   LOG_DBG("MAIN", "Entering deep sleep");
 
-  powerManager.startDeepSleep(gpio);
+  const uint32_t timerWakeSeconds =
+      SETTINGS.nametagEnabled ? static_cast<uint32_t>(SETTINGS.nametagCycleMinutes) * 60u : 0u;
+  powerManager.startDeepSleep(gpio, timerWakeSeconds);
 }
 
 void setupDisplayAndFonts(bool seamless = false) {
@@ -369,6 +387,24 @@ void setup() {
       LOG_DBG("MAIN", "Wakeup reason: After USB Power");
       powerManager.startDeepSleep(gpio);
       break;
+    case HalGPIO::WakeupReason::TimerWakeup:
+      LOG_DBG("MAIN", "Wakeup reason: Timer (nametag cycle)");
+      if (!SETTINGS.nametagEnabled) {
+        // Setting was flipped off between cycles — no reason to be awake.
+        powerManager.startDeepSleep(gpio);
+      }
+      setupDisplayAndFonts(true);
+      {
+        const auto labels = nametag::parseTexts(std::string_view(SETTINGS.nametagTexts));
+        advanceNametagIndex(static_cast<uint32_t>(labels.size()));
+      }
+      // goToSleep() swaps in NametagActivity when SETTINGS.nametagEnabled is on
+      // and renders it immediately. Avoid enterDeepSleep() so we don't rewrite
+      // APP_STATE (SPIFFS wear) on every timer cycle.
+      activityManager.goToSleep(true);
+      display.deepSleep();
+      powerManager.startDeepSleep(gpio, static_cast<uint32_t>(SETTINGS.nametagCycleMinutes) * 60u);
+      return;
     case HalGPIO::WakeupReason::AfterFlash:
       // After flashing, just proceed to boot
     case HalGPIO::WakeupReason::Other:

@@ -5,9 +5,11 @@
 
 #include <algorithm>
 
+#include "CrossPointSettings.h"
 #include "OpdsServerStore.h"
 #include "boot_sleep/BootActivity.h"
 #include "boot_sleep/SleepActivity.h"
+#include "nametag/NametagActivity.h"
 #include "browser/OpdsBookBrowserActivity.h"
 #include "home/CrashActivity.h"
 #include "home/FileBrowserActivity.h"
@@ -197,8 +199,16 @@ void ActivityManager::goToReader(std::string path) {
   replaceActivity(std::make_unique<ReaderActivity>(renderer, mappedInput, std::move(path)));
 }
 
+// Provided by main.cpp — reads the RTC_NOINIT nametag text index, defaulting
+// to 0 when the magic word doesn't match (e.g. after a battery power-off).
+extern uint32_t getNametagIndex();
+
 void ActivityManager::goToSleep(bool fromTimeout) {
-  replaceActivity(std::make_unique<SleepActivity>(renderer, mappedInput, fromTimeout));
+  if (SETTINGS.nametagEnabled) {
+    replaceActivity(std::make_unique<NametagActivity>(renderer, mappedInput, getNametagIndex()));
+  } else {
+    replaceActivity(std::make_unique<SleepActivity>(renderer, mappedInput, fromTimeout));
+  }
   loop();  // Important: sleep screen must be rendered immediately, the caller will go to sleep right after this returns
 }
 
