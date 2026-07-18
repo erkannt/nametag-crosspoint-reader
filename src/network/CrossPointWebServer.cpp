@@ -10,6 +10,10 @@
 
 #include <algorithm>
 
+#include <GfxRenderer.h>
+#include <NametagLayout.h>
+#include <NametagText.h>
+
 #include "CrossPointSettings.h"
 #include "FontInstaller.h"
 #include "OpdsServerStore.h"
@@ -17,6 +21,7 @@
 #include "SettingsList.h"
 #include "WebDAVHandler.h"
 #include "WifiCredentialStore.h"
+#include "fontIds.h"
 #include "html/FilesPageHtml.generated.h"
 #include "html/FontsPageHtml.generated.h"
 #include "html/HomePageHtml.generated.h"
@@ -158,6 +163,7 @@ void CrossPointWebServer::begin() {
   server->on("/settings", HTTP_GET, [this] { handleSettingsPage(); });
   server->on("/api/settings", HTTP_GET, [this] { handleGetSettings(); });
   server->on("/api/settings", HTTP_POST, [this] { handlePostSettings(); });
+  server->on("/api/nametag/preview", HTTP_POST, [this] { handleNametagPreview(); });
 
   // Font management endpoints
   server->on("/fonts", HTTP_GET, [this] { handleFontsPage(); });
@@ -1272,6 +1278,62 @@ void CrossPointWebServer::handlePostSettings() {
 
   LOG_DBG("WEB", "Applied %d setting(s)", applied);
   server->send(200, "text/plain", String("Applied ") + String(applied) + " setting(s)");
+}
+
+// ---- Nametag preview API ----
+
+// The renderer lives in main.cpp; the preview endpoint calls its wrap/measure
+// APIs to report exact per-label fit info (same font + width the on-device
+// activity uses).
+extern GfxRenderer renderer;
+
+void CrossPointWebServer::handleNametagPreview() {
+  if (!server->hasArg("plain")) {
+    server->send(400, "application/json", R"({"error":"missing body"})");
+    return;
+  }
+  const String body = server->arg("plain");
+  JsonDocument reqDoc;
+  const DeserializationError err = deserializeJson(reqDoc, body);
+  if (err) {
+    server->send(400, "application/json", R"({"error":"invalid JSON"})");
+    return;
+  }
+
+  const char* textCstr = reqDoc["text"] | "";
+  // Match the on-device buffer so the preview reflects what will actually be
+  // saved (SettingsList truncates to this size on POST /api/settings).
+  if (strnlen(textCstr, sizeof(CrossPointSettings::nametagTexts)) >= sizeof(CrossPointSettings::nametagTexts)) {
+    server->send(400, "application/json", R"({"error":"text too long"})");
+    return;
+  }
+
+  const int headerLH = renderer.getLineHeight(NOTOSANS_18_FONT_ID);
+  const int labelLH = renderer.getLineHeight(NAMETAG_LARGE_FONT_ID);
+  const int maxLines = nametag::maxLabelLines(headerLH, labelLH);
+  // Upper-bound the per-label wrap so an accidental novel doesn't return a
+  // thousand-line vector. maxLines + a small overflow window is enough for the
+  // UI to say "X lines, doesn't fit".
+  const int measureCap = maxLines + 8;
+
+  JsonDocument resDoc;
+  resDoc["maxLines"] = maxLines;
+  JsonArray arr = resDoc["labels"].to<JsonArray>();
+
+  const auto labels = nametag::parseTexts(std::string_view(textCstr));
+  constexpr size_t MAX_LABELS = 50;
+  for (size_t i = 0; i < labels.size() && i < MAX_LABELS; ++i) {
+    const std::string labelStr(labels[i]);
+    const auto lines = renderer.wrappedText(NAMETAG_LARGE_FONT_ID, labelStr.c_str(), nametag::PANEL_W, measureCap);
+    JsonObject obj = arr.add<JsonObject>();
+    obj["text"] = labelStr;
+    obj["lines"] = static_cast<int>(lines.size());
+    obj["fits"] = nametag::labelFits(static_cast<int>(lines.size()), maxLines);
+  }
+
+  String out;
+  serializeJson(resDoc, out);
+  server->send(200, "application/json", out);
 }
 
 // ---- OPDS Server API ----

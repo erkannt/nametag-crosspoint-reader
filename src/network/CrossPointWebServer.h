@@ -108,6 +108,10 @@ class CrossPointWebServer {
   void handleGetSettings() const;
   void handlePostSettings();
 
+  // Nametag preview: takes {"text": "..."} and reports per-label wrap info so
+  // the settings page can warn the user before saving text that won't fit.
+  void handleNametagPreview();
+
   // Font management handlers
   void handleFontsPage() const;
   void handleFontList() const;
