@@ -86,7 +86,10 @@ class ActivityManager {
   void goToRecentBooks();
   void goToBrowser();
   void goToReader(std::string path);
-  void goToSleep(bool fromTimeout = false);
+  // isNametagCycleContinuation is set on the TimerWakeup nametag path where the
+  // panel already shows the previous nametag frame; NametagActivity uses it to
+  // opt into FAST_REFRESH (differential paint, no flash).
+  void goToSleep(bool fromTimeout = false, bool isNametagCycleContinuation = false);
   void goToBoot();
   void goToFullScreenMessage(std::string message, EpdFontFamily::Style style = EpdFontFamily::REGULAR);
   void goToCrashReport();

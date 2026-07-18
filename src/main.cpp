@@ -131,9 +131,11 @@ constexpr uint32_t NAMETAG_INDEX_MAGIC = 0x4E414D45;  // 'NAME'
 
 uint32_t getNametagIndex() { return (nametagIndexMagic == NAMETAG_INDEX_MAGIC) ? nametagTextIndex : 0; }
 
-void advanceNametagIndex(uint32_t labelCount) {
-  const uint32_t next = (labelCount == 0) ? 0 : (getNametagIndex() + 1) % labelCount;
-  nametagTextIndex = next;
+// Monotonically increasing across cycles; NametagActivity does `% labels.size()`
+// for label selection. Keeping it monotonic lets us also use `% N` as a
+// full-refresh cadence counter (ghost cleanup every N FAST refreshes).
+void advanceNametagIndex() {
+  nametagTextIndex = getNametagIndex() + 1;
   nametagIndexMagic = NAMETAG_INDEX_MAGIC;
 }
 
@@ -393,14 +395,13 @@ void setup() {
         powerManager.startDeepSleep(gpio);
       }
       setupDisplayAndFonts(true);
-      {
-        const auto labels = nametag::parseTexts(std::string_view(SETTINGS.nametagTexts));
-        advanceNametagIndex(static_cast<uint32_t>(labels.size()));
-      }
+      advanceNametagIndex();
       // goToSleep() swaps in NametagActivity when SETTINGS.nametagEnabled is on
       // and renders it immediately. Avoid enterDeepSleep() so we don't rewrite
-      // APP_STATE (SPIFFS wear) on every timer cycle.
-      activityManager.goToSleep(true);
+      // APP_STATE (SPIFFS wear) on every timer cycle. The second arg tells
+      // NametagActivity the panel already shows the previous nametag frame, so
+      // FAST_REFRESH is a valid differential paint.
+      activityManager.goToSleep(true, /*isNametagCycleContinuation=*/true);
       display.deepSleep();
       powerManager.startDeepSleep(gpio, static_cast<uint32_t>(SETTINGS.nametagCycleSeconds));
       return;
