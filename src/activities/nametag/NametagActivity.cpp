@@ -66,8 +66,17 @@ void NametagActivity::onEnter() {
   // GfxRenderer::drawText treats `y` as the top of the line (it adds the font's
   // ascender internally to get the baseline). All positions below are top-of-line.
 
-  // Small header sitting near the top-left of the text region.
-  renderer.drawText(UI_10_FONT_ID, 12, textRegionY + 6, tr(STR_NAMETAG_HEADER), true);
+  // Header near the top-left of the text region — bold 18pt, roughly triple the
+  // previous 10pt UI size. Reserves a strip at the top so the size-fit label
+  // below doesn't collide with it.
+  constexpr int HEADER_PAD_TOP = 8;
+  constexpr int HEADER_PAD_BOTTOM = 8;
+  constexpr int HEADER_LEFT = 12;
+  renderer.drawText(NOTOSANS_18_FONT_ID, HEADER_LEFT, textRegionY + HEADER_PAD_TOP, tr(STR_NAMETAG_HEADER), true,
+                    EpdFontFamily::BOLD);
+  const int headerStripH = HEADER_PAD_TOP + renderer.getLineHeight(NOTOSANS_18_FONT_ID) + HEADER_PAD_BOTTOM;
+  const int labelRegionY = textRegionY + headerStripH;
+  const int labelRegionH = textRegionH - headerStripH;
 
   const auto labels = nametag::parseTexts(std::string_view(SETTINGS.nametagTexts));
   if (!labels.empty()) {
@@ -87,16 +96,15 @@ void NametagActivity::onEnter() {
     constexpr size_t kCandidateCount = sizeof(kCandidates) / sizeof(kCandidates[0]);
 
     const nametag::Measurer m{&wrapCb, &lineHeightCb, const_cast<GfxRenderer*>(&renderer)};
-    const auto fit = nametag::chooseFont(kCandidates, kCandidateCount, label, PANEL_W, textRegionH, m);
+    const auto fit = nametag::chooseFont(kCandidates, kCandidateCount, label, PANEL_W, labelRegionH, m);
 
     const std::string labelStr(label);
     const auto lines = renderer.wrappedText(fit.fontId, labelStr.c_str(), PANEL_W, fit.lineCount);
 
-    // Centre the top-of-line block in the region. drawText handles the baseline
-    // shift, so we just pick top-of-first-line so N lines fit centrally.
+    // Centre the top-of-line block in the label sub-region.
     const int lineCount = static_cast<int>(lines.size());
     const int blockH = lineCount * fit.lineHeight;
-    int y = textRegionY + (textRegionH - blockH) / 2;
+    int y = labelRegionY + (labelRegionH - blockH) / 2;
     for (const auto& line : lines) {
       renderer.drawCenteredText(fit.fontId, y, line.c_str(), true);
       y += fit.lineHeight;
