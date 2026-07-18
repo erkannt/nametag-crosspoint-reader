@@ -1169,6 +1169,9 @@ void CrossPointWebServer::handleGetSettings() const {
         } else if (s.stringMaxLen > 0) {
           doc["value"] = reinterpret_cast<const char*>(&SETTINGS) + s.stringOffset;
         }
+        if (s.multiline) {
+          doc["multiline"] = true;
+        }
         break;
       }
       default:

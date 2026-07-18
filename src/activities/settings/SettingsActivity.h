@@ -47,6 +47,7 @@ struct SettingInfo {
   // Direct char[] string fields (for settings stored in CrossPointSettings)
   size_t stringOffset = 0;
   size_t stringMaxLen = 0;
+  bool multiline = false;  // Web UI renders a <textarea> instead of <input type="text">.
 
   // Dynamic accessors (for settings stored outside CrossPointSettings, e.g. KOReaderCredentialStore)
   std::function<uint8_t()> valueGetter;
@@ -111,6 +112,13 @@ struct SettingInfo {
     s.stringMaxLen = maxLen;
     s.key = key;
     s.category = category;
+    return s;
+  }
+
+  static SettingInfo MultilineString(StrId nameId, char* ptr, size_t maxLen, const char* key = nullptr,
+                                     StrId category = StrId::STR_NONE_OPT) {
+    SettingInfo s = String(nameId, ptr, maxLen, key, category);
+    s.multiline = true;
     return s;
   }
 
