@@ -564,7 +564,7 @@
             '<span class="setting-control">' + renderControl(s) + '</span>' +
             '</div>';
           if (s.key === 'nametagEnabled') {
-            html += '<div class="setting-hint">Timer wake requires USB power; on battery the label will not cycle.</div>';
+            html += '<div class="setting-hint">Nametag mode keeps the MCU lightly powered during sleep so cycling works on battery too. Idle drain is small (~µA range); short cycle intervals will still shorten battery life meaningfully.</div>';
           }
         });
         html += '</div>';

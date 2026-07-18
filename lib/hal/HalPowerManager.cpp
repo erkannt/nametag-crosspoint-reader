@@ -75,22 +75,32 @@ void HalPowerManager::startDeepSleep(HalGPIO& gpio, uint32_t timerWakeSeconds) c
   logSerial.end();
 #endif
 
-  // Pre-sleep routines from the original firmware
-  // GPIO13 is connected to battery latch MOSFET, we need to make sure it's low during sleep
-  // Note that this means the MCU will be completely powered off during sleep, including RTC
+  // Pre-sleep routines from the original firmware.
+  //
+  // GPIO13 is the gate of the battery-latch MOSFET. Driving it LOW disconnects
+  // the battery from the MCU's regulator — on battery power that fully shuts
+  // the chip off (including RTC), and wake happens via a separate hardware
+  // path that briefly re-powers the regulator when the power button is
+  // pressed. This is what gives normal deep sleep its zero-drain behaviour.
+  //
+  // When a timer wake is armed we CAN'T do that: the RTC would die and the
+  // timer would never fire. Keep GPIO13 HIGH so the MOSFET stays conducting,
+  // the MCU stays powered from the battery through the regulator, and the RTC
+  // domain remains available across sleep. Deep-sleep current is ~5-10 µA in
+  // this mode — negligible for reasonable nametag cycle lengths.
   constexpr gpio_num_t GPIO_SPIWP = GPIO_NUM_13;
+  const bool keepBatteryLatch = timerWakeSeconds > 0;
   gpio_set_direction(GPIO_SPIWP, GPIO_MODE_OUTPUT);
-  gpio_set_level(GPIO_SPIWP, 0);
+  gpio_set_level(GPIO_SPIWP, keepBatteryLatch ? 1 : 0);
   esp_sleep_config_gpio_isolate();
   gpio_deep_sleep_hold_en();
   gpio_hold_en(GPIO_SPIWP);
   pinMode(InputManager::POWER_BUTTON_PIN, INPUT_PULLUP);
-  // Arm the wakeup trigger *after* the button is released
-  // Note: this is only useful for waking up on USB power. On battery, the MCU will be completely powered off, so the
-  // power button is hard-wired to briefly provide power to the MCU, waking it up regardless of the wakeup source
-  // configuration
+  // Arm the wakeup trigger *after* the button is released.
+  // With the battery latch cut this is only useful on USB power (the MCU is
+  // off on battery and wakes via the hardware short); with the latch retained
+  // the GPIO wake fires normally on both USB and battery.
   esp_deep_sleep_enable_gpio_wakeup(1ULL << InputManager::POWER_BUTTON_PIN, ESP_GPIO_WAKEUP_GPIO_LOW);
-  // Optional periodic wake for kiosk-style features (e.g. nametag). Fires only on USB — see header note.
   if (timerWakeSeconds > 0) {
     esp_sleep_enable_timer_wakeup(static_cast<uint64_t>(timerWakeSeconds) * 1000000ULL);
   }

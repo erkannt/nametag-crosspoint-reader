@@ -39,9 +39,12 @@ class HalPowerManager {
 
   // Setup wake up GPIO and enter deep sleep.
   // Should be called inside main loop() to handle the currentLockMode.
-  // When timerWakeSeconds > 0, also arms an RTC timer wake — but note the RTC
-  // is only powered when the device is on USB. On battery the battery-latch
-  // MOSFET disconnects the MCU during sleep so the timer will not fire.
+  //
+  // When timerWakeSeconds > 0 an RTC timer wake is armed AND the battery-latch
+  // MOSFET on GPIO13 is held closed so the MCU keeps drawing from the battery
+  // (~5-10 µA in this mode) and the RTC survives sleep. This is what lets the
+  // nametag mode cycle on battery. Otherwise (timerWakeSeconds == 0) we drive
+  // the latch open for a true zero-drain shutdown; only the power button wakes.
   void startDeepSleep(HalGPIO& gpio, uint32_t timerWakeSeconds = 0) const;
 
   // Get battery percentage (range 0-100)
