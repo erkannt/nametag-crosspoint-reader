@@ -6,24 +6,25 @@ using nametag::labelRegionH;
 using nametag::maxLabelLines;
 
 TEST(NametagLayout, HeaderStripHeightIsPadPlusFontHeight) {
-  // 8 pad-top + font + 8 pad-bottom
-  EXPECT_EQ(headerStripH(24), 40);
-  EXPECT_EQ(headerStripH(0), 16);
+  // 4 pad-top + font + 4 pad-bottom
+  EXPECT_EQ(headerStripH(24), 32);
+  EXPECT_EQ(headerStripH(0), 8);
 }
 
 TEST(NametagLayout, LabelRegionShrinksByHeaderStrip) {
   // Panel below the BMP is 320px tall (480 - 160). Header strip subtracts.
-  EXPECT_EQ(labelRegionH(24), 320 - 40);
-  EXPECT_EQ(labelRegionH(0), 320 - 16);
+  EXPECT_EQ(labelRegionH(24), 320 - 32);
+  EXPECT_EQ(labelRegionH(0), 320 - 8);
 }
 
 TEST(NametagLayout, MaxLinesFloorsDivision) {
-  // labelRegion = 280, lineHeight = 64 → 4 lines (4*64=256 fits, 5*64=320 overflows)
-  EXPECT_EQ(maxLabelLines(/*headerLH=*/24, /*labelLH=*/64), 4);
-  // labelRegion = 280, lineHeight = 70 → 4 lines exactly (4*70=280)
-  EXPECT_EQ(maxLabelLines(24, 70), 4);
-  // labelRegion = 280, lineHeight = 71 → 3 lines (3*71=213, 4*71=284)
-  EXPECT_EQ(maxLabelLines(24, 71), 3);
+  // labelRegion(24) = 288. lineHeight 72 → 4 lines (4*72=288 exactly).
+  EXPECT_EQ(maxLabelLines(/*headerLH=*/24, /*labelLH=*/72), 4);
+  // lineHeight 73 → 3 lines (3*73=219, 4*73=292 overflows).
+  EXPECT_EQ(maxLabelLines(24, 73), 3);
+  // Real-world: 48pt bold has advanceY=136. Header UI_12 bold has advanceY=29.
+  // labelRegion(29) = 279 → 2 lines (2*136=272 fits, 3*136=408 overflows).
+  EXPECT_EQ(maxLabelLines(29, 136), 2);
 }
 
 TEST(NametagLayout, MaxLinesGuardsAgainstZeroLineHeight) {

@@ -10,8 +10,10 @@ constexpr int PANEL_W = 800;
 constexpr int PANEL_H = 480;
 constexpr int BMP_H = 160;
 
-constexpr int HEADER_PAD_TOP = 8;
-constexpr int HEADER_PAD_BOTTOM = 8;
+// Padding above/below the header text. Tight (4 px) rather than roomy (8 px)
+// so we retain enough vertical budget for two 48pt label lines below.
+constexpr int HEADER_PAD_TOP = 4;
+constexpr int HEADER_PAD_BOTTOM = 4;
 constexpr int HEADER_LEFT = 12;
 
 // Top-of-text and total height of the region below the BMP.

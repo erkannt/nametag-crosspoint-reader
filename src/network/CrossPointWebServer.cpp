@@ -1308,7 +1308,7 @@ void CrossPointWebServer::handleNametagPreview() {
     return;
   }
 
-  const int headerLH = renderer.getLineHeight(NOTOSANS_18_FONT_ID);
+  const int headerLH = renderer.getLineHeight(UI_12_FONT_ID);
   const int labelLH = renderer.getLineHeight(NAMETAG_LARGE_FONT_ID);
   const int maxLines = nametag::maxLabelLines(headerLH, labelLH);
   // Upper-bound the per-label wrap so an accidental novel doesn't return a

@@ -43,8 +43,8 @@ void NametagActivity::onEnter() {
   // The label region always occupies the bottom two-thirds of the panel regardless
   // of whether the BMP loaded — predictable geometry, and shared with the web-UI
   // preview via NametagLayout.
-  const int headerLineH = renderer.getLineHeight(NOTOSANS_18_FONT_ID);
-  renderer.drawText(NOTOSANS_18_FONT_ID, nametag::HEADER_LEFT,
+  const int headerLineH = renderer.getLineHeight(UI_12_FONT_ID);
+  renderer.drawText(UI_12_FONT_ID, nametag::HEADER_LEFT,
                     nametag::TEXT_REGION_Y + nametag::HEADER_PAD_TOP, tr(STR_NAMETAG_HEADER), true,
                     EpdFontFamily::BOLD);
   const int labelRegionY = nametag::TEXT_REGION_Y + nametag::headerStripH(headerLineH);
