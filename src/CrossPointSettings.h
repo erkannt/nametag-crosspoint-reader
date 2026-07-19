@@ -271,7 +271,7 @@ class CrossPointSettings {
   // Nametag mode: replace the sleep screen with a kiosk-style label that cycles on a timer.
   // Timer wake only fires when USB-powered; on battery the device fully powers off during deep sleep.
   uint8_t nametagEnabled = 0;
-  uint8_t nametagCycleSeconds = 30;
+  uint8_t nametagCycleMinutes = 5;
   char nametagTexts[512] = "";
 
   ~CrossPointSettings() = default;
@@ -283,10 +283,8 @@ class CrossPointSettings {
   static constexpr uint8_t SLEEP_TIMEOUT_NEVER_MINUTES = 31;
   static constexpr uint8_t MAX_SLEEP_TIMEOUT_MINUTES = SLEEP_TIMEOUT_NEVER_MINUTES;
 
-  // uint8_t range: keep low enough that wake latency is comfortable and high enough
-  // for useful cycles. 5..240 gives ~4 min max — long enough for readable nametags.
-  static constexpr uint8_t MIN_NAMETAG_CYCLE_SECONDS = 5;
-  static constexpr uint8_t MAX_NAMETAG_CYCLE_SECONDS = 240;
+  static constexpr uint8_t MIN_NAMETAG_CYCLE_MINUTES = 1;
+  static constexpr uint8_t MAX_NAMETAG_CYCLE_MINUTES = 60;
 
   // Callback to resolve SD card font IDs. Set by SdCardFontSystem::begin().
   // Returns font ID or 0 if not found.

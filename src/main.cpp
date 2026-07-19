@@ -285,7 +285,8 @@ void enterDeepSleep(bool fromTimeout = false) {
   display.deepSleep();
   LOG_DBG("MAIN", "Entering deep sleep");
 
-  const uint32_t timerWakeSeconds = SETTINGS.nametagEnabled ? static_cast<uint32_t>(SETTINGS.nametagCycleSeconds) : 0u;
+  const uint32_t timerWakeSeconds =
+      SETTINGS.nametagEnabled ? static_cast<uint32_t>(SETTINGS.nametagCycleMinutes) * 60u : 0u;
   powerManager.startDeepSleep(gpio, timerWakeSeconds);
 }
 
@@ -335,7 +336,7 @@ static void renderNametagCycleAndSleep() {
   // APP_STATE (SPIFFS wear) on every timer cycle.
   activityManager.goToSleep(true);
   display.deepSleep();
-  powerManager.startDeepSleep(gpio, static_cast<uint32_t>(SETTINGS.nametagCycleSeconds));
+  powerManager.startDeepSleep(gpio, static_cast<uint32_t>(SETTINGS.nametagCycleMinutes) * 60u);
 }
 
 void setup() {

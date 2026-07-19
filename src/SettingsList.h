@@ -132,10 +132,10 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
         // --- Nametag ---
         SettingInfo::Toggle(StrId::STR_NAMETAG_ENABLED, &CrossPointSettings::nametagEnabled, "nametagEnabled",
                             StrId::STR_CAT_NAMETAG),
-        SettingInfo::Value(StrId::STR_NAMETAG_CYCLE_SECONDS, &CrossPointSettings::nametagCycleSeconds,
-                           {CrossPointSettings::MIN_NAMETAG_CYCLE_SECONDS, CrossPointSettings::MAX_NAMETAG_CYCLE_SECONDS,
-                            5},
-                           "nametagCycleSeconds", StrId::STR_CAT_NAMETAG),
+        SettingInfo::Value(StrId::STR_NAMETAG_CYCLE_MINUTES, &CrossPointSettings::nametagCycleMinutes,
+                           {CrossPointSettings::MIN_NAMETAG_CYCLE_MINUTES, CrossPointSettings::MAX_NAMETAG_CYCLE_MINUTES,
+                            1},
+                           "nametagCycleMinutes", StrId::STR_CAT_NAMETAG),
         SettingInfo::MultilineString(StrId::STR_NAMETAG_TEXTS, SETTINGS.nametagTexts,
                                      sizeof(CrossPointSettings::nametagTexts), "nametagTexts", StrId::STR_CAT_NAMETAG),
 
