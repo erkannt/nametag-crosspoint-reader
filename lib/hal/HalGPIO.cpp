@@ -312,8 +312,14 @@ HalGPIO::WakeupReason HalGPIO::getWakeupReason() const {
   if (wakeupCause == ESP_SLEEP_WAKEUP_TIMER) {
     return WakeupReason::TimerWakeup;
   }
+  // Two paths reach PowerButton:
+  //   1. Battery cold-boot via the hardware latch (POWERON + UNDEFINED, no USB) — regular
+  //      sleep drops the battery-latch MOSFET so power-button wake re-energises the MCU.
+  //   2. GPIO wake from an actual deep sleep — either on USB (latch not needed), or on
+  //      battery when nametag mode kept the latch closed so the RTC could survive sleep.
+  //      The only GPIO wake source we arm is POWER_BUTTON_PIN, so USB state doesn't matter.
   if ((wakeupCause == ESP_SLEEP_WAKEUP_UNDEFINED && resetReason == ESP_RST_POWERON && !usbConnected) ||
-      (wakeupCause == ESP_SLEEP_WAKEUP_GPIO && resetReason == ESP_RST_DEEPSLEEP && usbConnected)) {
+      (wakeupCause == ESP_SLEEP_WAKEUP_GPIO && resetReason == ESP_RST_DEEPSLEEP)) {
     return WakeupReason::PowerButton;
   }
   if (wakeupCause == ESP_SLEEP_WAKEUP_UNDEFINED && resetReason == ESP_RST_UNKNOWN && usbConnected) {
