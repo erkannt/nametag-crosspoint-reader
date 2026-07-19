@@ -203,10 +203,9 @@ void ActivityManager::goToReader(std::string path) {
 // to 0 when the magic word doesn't match (e.g. after a battery power-off).
 extern uint32_t getNametagIndex();
 
-void ActivityManager::goToSleep(bool fromTimeout, bool isNametagCycleContinuation) {
+void ActivityManager::goToSleep(bool fromTimeout) {
   if (SETTINGS.nametagEnabled) {
-    replaceActivity(
-        std::make_unique<NametagActivity>(renderer, mappedInput, getNametagIndex(), isNametagCycleContinuation));
+    replaceActivity(std::make_unique<NametagActivity>(renderer, mappedInput, getNametagIndex()));
   } else {
     replaceActivity(std::make_unique<SleepActivity>(renderer, mappedInput, fromTimeout));
   }

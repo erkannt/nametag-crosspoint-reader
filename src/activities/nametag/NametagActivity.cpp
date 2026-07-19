@@ -71,13 +71,7 @@ void NametagActivity::onEnter() {
     }
   }
 
-  // FAST_REFRESH is a differential paint against whatever is currently on the
-  // panel — safe only when isCycleContinuation, i.e. the panel already shows
-  // the previous nametag frame. On any fresh entry (user going to sleep, cold
-  // boot) the panel holds arbitrary content, so we FULL. We also FULL every
-  // FULL_REFRESH_EVERY cycles to purge FAST-refresh ghost accumulation.
-  const bool fullRefresh = !isCycleContinuation || (textIndex % NametagActivity::FULL_REFRESH_EVERY == 0);
-  renderer.displayBuffer(fullRefresh ? HalDisplay::FULL_REFRESH : HalDisplay::FAST_REFRESH);
+  renderer.displayBuffer(HalDisplay::FULL_REFRESH);
 
   renderer.setOrientation(priorOrientation);
 }
