@@ -25,6 +25,7 @@ class CrossPointSettings {
     BLANK = 4,
     COVER_CUSTOM = 5,
     QUICK_RESUME = 6,
+    NAMETAG = 7,
     SLEEP_SCREEN_MODE_COUNT
   };
   enum SLEEP_SCREEN_COVER_MODE { FIT = 0, CROP = 1, SLEEP_SCREEN_COVER_MODE_COUNT };
@@ -268,9 +269,6 @@ class CrossPointSettings {
   uint8_t language = 0;
   // Quick Resume: keep current content visible with moon icon instead of showing a static sleep screen.
   uint8_t quickResumeSleepScreen = QUICK_RESUME_NEVER;
-  // Nametag mode: replace the sleep screen with a kiosk-style label that cycles on a timer.
-  // Timer wake only fires when USB-powered; on battery the device fully powers off during deep sleep.
-  uint8_t nametagEnabled = 0;
   uint8_t nametagCycleMinutes = 5;
   char nametagTexts[512] = "";
 

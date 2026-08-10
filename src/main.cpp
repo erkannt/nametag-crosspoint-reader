@@ -286,7 +286,9 @@ void enterDeepSleep(bool fromTimeout = false) {
   LOG_DBG("MAIN", "Entering deep sleep");
 
   const uint32_t timerWakeSeconds =
-      SETTINGS.nametagEnabled ? static_cast<uint32_t>(SETTINGS.nametagCycleMinutes) * 60u : 0u;
+      SETTINGS.sleepScreen == CrossPointSettings::NAMETAG
+          ? static_cast<uint32_t>(SETTINGS.nametagCycleMinutes) * 60u
+          : 0u;
   powerManager.startDeepSleep(gpio, timerWakeSeconds);
 }
 
@@ -331,7 +333,7 @@ static void renderNametagCycleAndSleep() {
   setupDisplayAndFonts(true);
   const auto labels = nametag::parseTexts(std::string_view(SETTINGS.nametagTexts));
   advanceNametagIndex(static_cast<uint32_t>(labels.size()));
-  // goToSleep() swaps in NametagActivity when SETTINGS.nametagEnabled is on
+  // goToSleep() swaps in NametagActivity when sleepScreen == NAMETAG
   // and renders it immediately. Avoid enterDeepSleep() so we don't rewrite
   // APP_STATE (SPIFFS wear) on every timer cycle.
   activityManager.goToSleep(true);
@@ -393,7 +395,7 @@ void setup() {
   const auto wakeupReason = gpio.getWakeupReason();
   switch (wakeupReason) {
     case HalGPIO::WakeupReason::PowerButton:
-      if (SETTINGS.nametagEnabled) {
+      if (SETTINGS.sleepScreen == CrossPointSettings::NAMETAG) {
         // In nametag mode the power button is repurposed: a short press cycles
         // to the next label (and resets the cycle timer); a long press exits
         // nametag mode by falling through to the normal boot path.
@@ -418,7 +420,7 @@ void setup() {
       break;
     case HalGPIO::WakeupReason::TimerWakeup:
       LOG_DBG("MAIN", "Wakeup reason: Timer (nametag cycle)");
-      if (!SETTINGS.nametagEnabled) {
+      if (SETTINGS.sleepScreen != CrossPointSettings::NAMETAG) {
         // Setting was flipped off between cycles — no reason to be awake.
         powerManager.startDeepSleep(gpio);
       }

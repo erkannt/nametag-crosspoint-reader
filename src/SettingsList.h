@@ -105,7 +105,7 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
         // --- Display ---
         SettingInfo::Enum(StrId::STR_SLEEP_SCREEN, &CrossPointSettings::sleepScreen,
                           {StrId::STR_DARK, StrId::STR_LIGHT, StrId::STR_CUSTOM, StrId::STR_COVER, StrId::STR_NONE_OPT,
-                           StrId::STR_COVER_CUSTOM, StrId::STR_QUICK_RESUME},
+                           StrId::STR_COVER_CUSTOM, StrId::STR_QUICK_RESUME, StrId::STR_NAMETAG},
                           "sleepScreen", StrId::STR_CAT_DISPLAY),
         SettingInfo::Enum(StrId::STR_SLEEP_COVER_MODE, &CrossPointSettings::sleepScreenCoverMode,
                           {StrId::STR_FIT, StrId::STR_CROP}, "sleepScreenCoverMode", StrId::STR_CAT_DISPLAY),
@@ -130,8 +130,6 @@ inline std::vector<SettingInfo> getSettingsList(const SdCardFontRegistry* regist
                             StrId::STR_CAT_DISPLAY),
 
         // --- Nametag ---
-        SettingInfo::Toggle(StrId::STR_NAMETAG_ENABLED, &CrossPointSettings::nametagEnabled, "nametagEnabled",
-                            StrId::STR_CAT_NAMETAG),
         SettingInfo::Value(StrId::STR_NAMETAG_CYCLE_MINUTES, &CrossPointSettings::nametagCycleMinutes,
                            {CrossPointSettings::MIN_NAMETAG_CYCLE_MINUTES, CrossPointSettings::MAX_NAMETAG_CYCLE_MINUTES,
                             1},

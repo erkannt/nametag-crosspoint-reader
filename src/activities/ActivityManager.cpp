@@ -204,7 +204,7 @@ void ActivityManager::goToReader(std::string path) {
 extern uint32_t getNametagIndex();
 
 void ActivityManager::goToSleep(bool fromTimeout) {
-  if (SETTINGS.nametagEnabled) {
+  if (SETTINGS.sleepScreen == CrossPointSettings::NAMETAG) {
     replaceActivity(std::make_unique<NametagActivity>(renderer, mappedInput, getNametagIndex()));
   } else {
     replaceActivity(std::make_unique<SleepActivity>(renderer, mappedInput, fromTimeout));
